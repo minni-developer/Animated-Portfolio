@@ -40,14 +40,14 @@ function preloadAllFrames(onProgress) {
       const img = new Image();
       img.onload = onLoad;
       img.onerror = onLoad;
-      img.src = `/frames/${String(i).padStart(2, '0')}.webp`;
+      img.src = `${import.meta.env.BASE_URL}frames/${String(i).padStart(2, '0')}.webp`;
       frames[i] = img;
     }
 
     const center = new Image();
     center.onload = () => { centerImg = center; onLoad(); };
     center.onerror = onLoad;
-    center.src = '/frames/center.webp';
+    center.src = `${import.meta.env.BASE_URL}frames/center.webp`;
   });
 }
 
