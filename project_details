@@ -1,0 +1,382 @@
+# Manahil Sabir Portfolio — Project Documentation
+
+This is the complete reference for how your portfolio is built, so you can change anything —
+copy, colors, sections, the hero animation — without having to ask someone to do it for you.
+Drop this file straight into your project root (e.g. as `DOCUMENTATION.md`) and keep it there.
+
+---
+
+## 1. The one rule that explains almost everything
+
+**Text lives in `src/data/content.js`. Layout lives in components. Styling lives in `src/index.css`.**
+
+Every job, standard, certification, project, and word of copy on the site is a plain
+JavaScript value exported from `content.js`. Components (`.jsx` files) don't contain your
+words — they contain `.map()` loops that read `content.js` and turn each entry into HTML.
+This means:
+
+- Adding a job, a cert, a project, a standard = editing an array in `content.js`. No JSX
+  knowledge needed.
+- Changing how a section *looks* (spacing, layout, animation) = editing the matching
+  `.jsx` file in `src/components/sections/`.
+- Changing *colors, fonts, spacing rules* globally = editing `src/index.css`.
+
+If you only remember one thing from this document, remember that split.
+
+---
+
+## 2. Tech stack
+
+- **React 19** — component library, no routing (it's a single scrolling page).
+- **Vite** — the build tool / dev server. Fast local reloads, bundles for production.
+- **Plain CSS** (`src/index.css`) — no Tailwind, no CSS-in-JS. Just CSS custom properties
+  (variables) for theming, plain classes for everything else.
+- **No backend** — this is a static site. The "contact form" opens the visitor's email
+  client directly (see §8) rather than calling a server, so there's nothing to host or pay
+  for beyond static file hosting (Vercel, Netlify, GitHub Pages all work for free).
+
+### Commands
+
+```bash
+npm install        # one-time setup — installs React, Vite, etc. into node_modules/
+npm run dev        # starts a local dev server (usually http://127.0.0.1:5173) with hot reload
+npm run build      # builds the production site into dist/ — this is what you deploy
+npm run preview    # serves the dist/ build locally so you can sanity-check it
+npm run lint       # runs oxlint (a fast linter) to catch obvious JS mistakes
+```
+
+You need Node.js installed (v18+) for any of this to work. `node -v` in a terminal tells you
+if you have it.
+
+---
+
+## 3. Full file map
+
+```
+manahil portfolio/
+├── index.html                    ← page <title>, meta tags, favicon, Google Fonts link
+├── package.json                  ← dependency list + the npm scripts above
+├── vite.config.js                ← Vite build configuration (rarely needs touching)
+│
+├── public/                       ← files served as-is, referenced by absolute path (/frames/..)
+│   ├── frames/                   ← the 65 hero animation images (00.webp … 63.webp, center.webp)
+│   ├── preview_up.jpg            ← social-share preview thumbnail (og:image)
+│   ├── favicon.svg
+│   └── resume.pdf                ← ⚠️ YOU NEED TO ADD THIS — the Resume button links here
+│
+├── dev-assets/                   ← NOT part of the deployed site — reference/tooling only
+│   ├── character.mp4             ← original source video the frames were extracted from
+│   ├── extract_frames.py         ← slices the video into public/frames/*.webp
+│   ├── recolor_frames.py         ← recolors frames (currently red → purple)
+│   ├── original_frames/          ← untouched backup of the 65 frames in their ORIGINAL red
+│   └── README.md                 ← more detail on the above two scripts
+│
+└── src/
+    ├── main.jsx                  ← React entry point (renders <App /> into index.html)
+    ├── App.jsx                   ← top-level layout: composes every section, in order
+    ├── index.css                 ← ALL design tokens (colors/fonts/spacing) + ALL styling
+    │
+    ├── data/
+    │   └── content.js            ← ⭐ every piece of text/data on the site. See §4.
+    │
+    ├── components/
+    │   ├── Nav.jsx                ← floating pill nav, auto-highlights the section in view
+    │   ├── CharacterCanvas.jsx    ← the animated, cursor-tracking hero illustration
+    │   ├── PillarBadge.jsx        ← small colored "Governance / Risk / Compliance" tag
+    │   ├── PillarFilter.jsx       ← the "All / Governance / Risk / Compliance" tab bar
+    │   ├── AnimatedCounter.jsx    ← counts a number up from 0 when it scrolls into view
+    │   ├── Icons.jsx              ← every inline SVG icon used across the site, by name
+    │   │
+    │   └── sections/              ← one file per section of the page, top to bottom:
+    │       ├── Hero.jsx            ← name, title, tagline, Resume/Contact buttons
+    │       ├── About.jsx           ← bio paragraphs + the 4 animated stat cards
+    │       ├── Experience.jsx      ← job history timeline
+    │       ├── Skills.jsx          ← "How I Work" pillars + filterable standards table + skill chips
+    │       ├── Methodology.jsx     ← the 4-step engagement process stepper
+    │       ├── Projects.jsx        ← case study cards (problem → action → result)
+    │       ├── Artifacts.jsx       ← sample documentation/evidence gallery
+    │       ├── MaturitySnapshot.jsx← 5-domain capability scorecard
+    │       ├── Certifications.jsx  ← certifications + continuous learning + education
+    │       └── Contact.jsx         ← CTA, quick-message form, social link grid, footer
+    │
+    └── hooks/                     ← reusable bits of behavior, not tied to one component
+        ├── useMagneticCursor.js   ← makes the custom cursor dot/aura follow the mouse
+        ├── useScrollSpy.js        ← tells Nav.jsx which section is currently on screen
+        └── useScrollReveal.js     ← fades/slides sections in as you scroll to them
+```
+
+---
+
+## 4. `content.js` field-by-field reference
+
+Every export below is an array or object you can safely edit. Adding a new entry to an array
+(a new job, a new cert) just means copying an existing `{ ... }` block, changing its values,
+and adding a comma — React will render it automatically.
+
+### `profile`
+Your name, title, tagline, contact details, and the `socials` array (each entry needs a
+`platform`, `url`, `icon` — see `Icons.jsx` for valid icon names — and `label`). **An entry
+with an empty `url` is automatically hidden**, so you can leave GitHub/Twitter blank if you
+don't want them shown.
+
+### `grcPillars`
+The three cards in the "How I Work" block (Governance / Risk / Compliance) — each has a
+`name`, `tagline`, `description`, and an `accent` color. These are also what the pillar
+filter buttons and colored tags pull their labels from.
+
+### `about`
+`paragraphs` (your bio, one string per paragraph) and `highlights` (the 4 stat cards — each
+needs `value` (what's displayed, e.g. `"8+"`), `numericValue` (the number `AnimatedCounter`
+counts up to, e.g. `8`), `suffix` (e.g. `"+"` or `"%"`), `label`, and `note`).
+
+### `experience`
+An array of jobs, **most recent first**. Each job has `role`, `company`, `period`, a
+top-level `pillar` (used for the timeline dot color), a `summary`, and a `bullets` array
+where **each bullet has its own `pillar`** — this is what lets one job show a mix of
+governance/risk/compliance tags on different bullet points.
+
+### `standards`
+The table in the Skills section. Each entry: `code` (e.g. `"ISO/IEC 27001"`), `name`,
+`pillar`, `scope`, `note`. Add a new standard by adding a new object here — it'll
+automatically show up in the "All" view and whichever pillar filter matches.
+
+### `methodology`
+The 4-step process stepper. `steps` is an array of `{ step, title, pillar, timeframe,
+description, deliverables[] }`. Add/remove/reorder steps by editing this array — the
+stepper UI just renders whatever's here.
+
+### `artifacts`
+The documentation/evidence gallery cards. Each `items[]` entry: `title`, `pillar`,
+`standard`, `badge`, `summary`, `highlight`, `format`, `tags[]`.
+
+### `maturitySnapshot`
+The 5-domain scorecard. Each `domains[]` entry: `domain`, `level` (current score),
+`maxLevel` (usually `5`), `levelLabel`, `pillar`, `summary`. Change `level` to update your
+self-rating for that domain.
+
+### `projects`
+Case-study cards. Each entry: `title`, `tag`, `pillar`, `problem`, `action`, `result`. Keep
+this problem → action → result shape — it's the format hiring managers scan fastest.
+
+### `certifications` / `continuousLearning`
+`certifications[]`: `name`, `issuer`, `year`, `status` (`'Certified'` or `'In Progress'` —
+this drives the badge color), `pillar`, `id`. `continuousLearning[]`: `title`, `type`,
+`details` — for courses/communities you're currently engaged in rather than credentials
+you've completed.
+
+### `education`
+Array of `{ degree, school, period, note }`.
+
+### `skillGroups`
+The chip grid near the bottom of Skills. Each entry: `category` + an `items` array of
+plain strings.
+
+### `navLinks`
+Controls the floating nav pill **and must stay in sync with the `id="..."` on each
+`<section>`** in the section components. If you rename a nav link's `id`, update the
+matching section's `id` too (or the nav link/scrollspy will silently stop working for that
+section).
+
+---
+
+## 5. The GRC Pillar filter system (how it actually works)
+
+This is the most "custom" piece of logic in the project, so it's worth understanding end to
+end:
+
+1. **Tagging** — `standards`, `projects`, `artifacts`, `maturitySnapshot.domains`, and each
+   `experience` bullet all carry a `pillar` field: `'governance' | 'risk' | 'compliance'`.
+2. **`PillarBadge.jsx`** reads that field and renders a small colored tag with the matching
+   label — it's purely decorative/informational, no filtering logic of its own.
+3. **`PillarFilter.jsx`** is the tab bar ("All Pillars / Governance / Risk / Compliance").
+   It's a "dumb" component — it just calls `onSelectPillar(id)` when clicked. It doesn't
+   know what "governance" means; whoever uses it (e.g. `Skills.jsx`) decides.
+4. **The section component** (e.g. `Skills.jsx`) holds the actual filter state:
+   ```js
+   const [activePillar, setActivePillar] = useState('all');
+   const filteredStandards = useMemo(() => {
+     if (activePillar === 'all') return standards;
+     return standards.filter((s) => s.pillar === activePillar);
+   }, [activePillar]);
+   ```
+   Then it renders `filteredStandards` instead of the full `standards` array.
+
+**To add pillar filtering to a new section**, copy this same pattern: import `PillarFilter`
+and `PillarBadge`, add a `useState('all')`, filter your data array by `.pillar`, and render
+`PillarFilter` above your list with an `onSelectPillar={setActivePillar}` handler.
+
+---
+
+## 6. Design system (`src/index.css`)
+
+Everything visual is driven by CSS variables defined once at the top of `index.css` inside
+`:root { ... }`. Change a variable there and it updates everywhere it's used — you should
+almost never need to hunt down and change a color in ten different places.
+
+Key tokens:
+
+| Variable | What it controls |
+|---|---|
+| `--bg` | Hero background color (currently `#4B2E83`, deep purple) |
+| `--accent` | The single accent color reused everywhere: buttons, tags, timeline dots, badges, section labels |
+| `--paper` / `--paper-alt` | The two alternating light background shades used for content sections below the hero |
+| `--ink` / `--ink-70` / `--ink-50` | Text colors at full/70%/50% opacity, for headings vs. body vs. muted text |
+| `--line` | The subtle border color used on cards and table rows |
+| `--font-sans` | The body typeface (Inter) |
+
+Sections follow a repeating pattern in the markup: `<section className="section" id="...">`
+(or `.section-alt` to use the alternate background shade) wrapping a `<div
+className="section-inner">` that caps the content width and centers it. Copy this pattern
+for any new section you add so spacing stays consistent.
+
+**Animations respect accessibility**: `useScrollReveal.js` and the CSS both check
+`prefers-reduced-motion` and skip/instant-complete animations for anyone with that OS
+setting enabled. Don't remove those checks when editing.
+
+---
+
+## 7. The hero animation system
+
+This is the most unusual part of the codebase, so here's how the pieces fit together:
+
+- **The illustration** is 65 static images (`public/frames/00.webp` through `63.webp`, plus
+  `center.webp`), each a slightly different angle of the character's face/eyes.
+- **`CharacterCanvas.jsx`** draws one of these 65 images onto a `<canvas>` every animation
+  frame, picking *which* image based on the mouse position relative to the character (further
+  right → a frame looking further right, etc). This is why it looks like she's "watching"
+  your cursor — it's frame-swapping, not any kind of 3D rendering or video.
+- **`useMagneticCursor.js`** is a separate, unrelated effect: it moves the small dot + soft
+  ring (`.cursor-dot` / `.cursor-aura` in `App.jsx`) to follow your real cursor position, with
+  a bit of lag/easing. It's disabled automatically on touch devices (see the `(hover: hover)
+  and (pointer: fine)` media query in `index.css`) since there's no mouse to track there.
+- **The loading screen** in `App.jsx` shows a progress bar while all 65 frames preload, so the
+  hero doesn't glitch/flash while images are still arriving on a slow connection.
+
+### If you ever want to change the hero's color again
+
+Don't hand-edit the 65 images. Instead:
+
+1. Open `dev-assets/recolor_frames.py` and change the `NEW_RGB` value at the top to your new
+   color (in RGB, e.g. `np.array([R, G, B])`).
+2. Run it (from the project root):
+   ```bash
+   python3 -m pip install pillow numpy scipy --break-system-packages   # first time only
+   python3 dev-assets/recolor_frames.py
+   ```
+3. It regenerates `public/frames/*.webp` **from the pristine originals in
+   `dev-assets/original_frames/`** (never from an already-recolored file — that would
+   compound compression artifacts), and also regenerates `public/preview_up.jpg`.
+4. Update the two places that hard-code the background color so the canvas's fallback fill
+   (shown before frames load) matches: `--bg` in `src/index.css` and `BG_COLOR` in
+   `src/components/CharacterCanvas.jsx`.
+
+The script works by finding the actual flat background region (not just "reddish pixels" —
+it specifically distinguishes real background, including bits visible through small gaps
+like the space inside her glasses frame, from coincidentally similar-colored foreground
+pixels like lip/skin tones) and only recoloring that, so the character herself is never
+altered.
+
+### If you want a different pose/video entirely
+
+`dev-assets/extract_frames.py` is what originally sliced `character.mp4` into the 64 numbered
+frames + `center.webp`. Swap in a new video and re-run that script, then run
+`recolor_frames.py` on the result if you want it in the site's accent color rather than the
+video's native background.
+
+---
+
+## 8. The contact form
+
+`Contact.jsx`'s "Send Quick Message" form has **no backend** — there's nowhere for it to send
+data to yet. On submit, it opens the visitor's own email client with a pre-filled subject and
+body addressed to `profile.email`. This works with zero configuration on your end, but it
+does mean the visitor needs a configured email client to actually send it.
+
+If you'd rather have true in-page submission (the message arrives without opening anything),
+sign up for a free form backend like [Formspree](https://formspree.io) or
+[Web3Forms](https://web3forms.com), and replace the `window.location.href = mailto:...` line
+in `Contact.jsx`'s `handleSubmit` with a `fetch()` POST to your form endpoint instead. Keep
+the existing `name` attributes on the inputs — most of these services read submitted data by
+input `name`.
+
+---
+
+## 9. Common tasks — quick cookbook
+
+**Add a new job** → `content.js` → add an object to `experience` (top of the array = most
+recent). Give it a `pillar` and give each `bullets[]` entry its own `pillar`.
+
+**Add a certification** → `content.js` → add an object to `certifications`.
+
+**Add a case study** → `content.js` → add an object to `projects` with `title`, `tag`,
+`pillar`, `problem`, `action`, `result`.
+
+**Add a standard to the table** → `content.js` → add an object to `standards`.
+
+**Change your name/title/email/resume link** → `content.js` → `profile`.
+
+**Hide a social link** → `content.js` → set that entry's `url` to `''` in `profile.socials`.
+
+**Add a whole new section** (e.g. "Testimonials") →
+1. Create `src/components/sections/Testimonials.jsx` (copy the shape of an existing simple
+   one like `About.jsx`).
+2. Add a matching data export to `content.js` (e.g. `export const testimonials = [...]`).
+3. Import and render `<Testimonials />` in `App.jsx`, in the position you want it to appear.
+4. Add `{ id: 'testimonials', label: 'Testimonials' }` to `navLinks` in `content.js`, and give
+   your new `<section>` the matching `id="testimonials"`.
+5. Add any section-specific CSS classes to `index.css`, following the `.section` /
+   `.section-inner` pattern already there.
+
+**Change the accent color (without touching the hero)** → just change `--accent` in
+`index.css` — this alone re-colors buttons, badges, tags, timeline dots, everything except
+the hero's actual background/frames (see §7 for that).
+
+**Reorder sections** → just reorder the `<Hero /> <About /> ...` lines in `App.jsx`. Nothing
+else needs to change unless you also want the nav order (`navLinks` in `content.js`) to match.
+
+---
+
+## 10. Before you publish this anywhere
+
+Search the project for `PLACEHOLDER` (your editor's find-in-files, or `grep -rn PLACEHOLDER
+src/` in a terminal) — every hit is sample data that needs your real details:
+
+- `profile.email`, `profile.linkedin`, and the rest of `profile.socials`
+- Certifications (issuer names, years, status)
+- Employer name/dates for the second (older) job entry
+- Education (university name, dates)
+- Some project result metrics are illustrative ("~60%") — replace with real numbers once
+  you have them, or soften the wording if you don't want to commit to a specific figure
+- Add your actual PDF at `public/resume.pdf` — the Resume button already links there
+
+---
+
+## 11. Deployment
+
+```bash
+npm run build
+```
+produces a `dist/` folder containing the fully static site — plain HTML/CSS/JS, no server
+required. Drag-and-drop `dist/` onto [Netlify](https://app.netlify.com/drop), or connect the
+project's Git repo to [Vercel](https://vercel.com) or [GitHub Pages](https://pages.github.com)
+and point the build command at `npm run build` with `dist` as the output directory.
+
+---
+
+## 12. Troubleshooting
+
+**"npm install" fails / package errors** — make sure you have Node.js 18 or newer
+(`node -v`), and try deleting `node_modules` and `package-lock.json` and running `npm
+install` again.
+
+**A section doesn't scroll to correctly from the nav** — check that the `id` in `navLinks`
+(in `content.js`) exactly matches the `id="..."` on that section's `<section>` tag in its
+`.jsx` file.
+
+**The hero looks broken / shows a solid color with no character** — this almost always means
+the 65 files in `public/frames/` didn't get copied/deployed. Check they exist and that
+`vite.config.js`/your host isn't excluding the `public/` folder.
+
+**I edited `content.js` and nothing changed** — make sure the dev server is still running
+(`npm run dev`) and check the browser console for a red error — a missing comma or an
+unclosed `{` in `content.js` will stop the whole file from loading.
